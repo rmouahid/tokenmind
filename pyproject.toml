@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "tokenmind"
+version = "0.1.0"
+description = "Finds the most token-efficient representation to give information to an LLM without degrading its answers"
+authors = ["rmouahid"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "tokenmind" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+ruff = "^0.8"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# API keys
+.env
+
+# Runtime data (response cache, scratch runs)
+cache/
+runs/
