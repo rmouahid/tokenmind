@@ -10,3 +10,4 @@ __pycache__/
 # Runtime data (response cache, scratch runs)
 cache/
 runs/
+data/
