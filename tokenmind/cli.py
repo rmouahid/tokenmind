@@ -4,7 +4,7 @@ from pathlib import Path
 
 import typer
 
-from tokenmind import bench, dataset
+from tokenmind import bench, dataset, rewriter
 from tokenmind.llm import Client
 from tokenmind.renderers import RENDERERS
 from tokenmind.tokenizers import TOKENIZERS
@@ -54,6 +54,7 @@ def run(
     representations: str = ",".join(RENDERERS),
     levels: str = "0,1,2,3,4",
     limit: int = 0,
+    rewrites: Path | None = None,
     out: Path = Path("runs/results.jsonl"),
 ) -> None:
     """Ask each model every question in every representation (cached)."""
@@ -64,6 +65,7 @@ def run(
         _split(models),
         _split(representations),
         [int(level) for level in _split(levels)],
+        extra=rewriter.load(rewrites) if rewrites else None,
     )
     typer.echo(f"{bench.save_rows(rows, out)} answers -> {out}")
     for cell in bench.summarize(bench.load_rows(out)):
@@ -71,3 +73,16 @@ def run(
             f"{cell.model:32} {cell.task:11} {cell.representation:10} "
             f"L{cell.level} {cell.accuracy:6.1%} [{cell.low:.0%}-{cell.high:.0%}]"
         )
+
+
+@app.command()
+def rewrite(
+    model: str,
+    items: Path = Path("data/items.jsonl"),
+    out: Path = Path("runs/rewrites.json"),
+) -> None:
+    """Ask `model` for a denser encoding of each world (kept if lossless)."""
+    loaded = dataset.load(items)
+    found = rewriter.rewrites(loaded, Client(), model)
+    rewriter.save(found, out)
+    typer.echo(f"{len(found)}/{len(loaded)} items with a lossless rewrite -> {out}")
