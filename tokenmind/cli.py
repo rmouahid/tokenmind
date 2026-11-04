@@ -192,3 +192,12 @@ def benchmark(
     typer.echo("\nCheapest representation within 98 % of natural-text accuracy:")
     _echo_winners(found)
     typer.echo(f"\nResults in {out}/: answers.jsonl, cells.csv, best.csv, tokens.csv")
+
+
+@app.command()
+def report(results: Path = Path("results"), docs: Path = Path("docs")) -> None:
+    """Charts and docs/results.md from the files in results/."""
+    from tokenmind import report as reporting  # matplotlib is slow to import
+
+    for path in reporting.write(results, docs):
+        typer.echo(f"-> {path}")
