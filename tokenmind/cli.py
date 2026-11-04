@@ -4,7 +4,7 @@ from pathlib import Path
 
 import typer
 
-from tokenmind import bench, dataset, rewriter
+from tokenmind import bench, dataset, optimizer, rewriter
 from tokenmind.llm import Client
 from tokenmind.renderers import RENDERERS
 from tokenmind.tokenizers import TOKENIZERS
@@ -86,3 +86,21 @@ def rewrite(
     found = rewriter.rewrites(loaded, Client(), model)
     rewriter.save(found, out)
     typer.echo(f"{len(found)}/{len(loaded)} items with a lossless rewrite -> {out}")
+
+
+@app.command()
+def best(
+    results: Path = Path("runs/results.jsonl"),
+    tokenizer: str = "gpt-4o",
+    fidelity: float = 0.98,
+) -> None:
+    """Cheapest representation per model and task within the fidelity target."""
+    cells = bench.summarize(bench.load_rows(results))
+    for model, task in sorted({(cell.model, cell.task) for cell in cells}):
+        winner = optimizer.best(cells, model, task, tokenizer, fidelity)
+        natural = optimizer.baseline(cells, model, task)
+        saved = 1 - winner.tokens[tokenizer] / natural.tokens[tokenizer]
+        typer.echo(
+            f"{model:32} {task:11} {winner.representation:10} L{winner.level} "
+            f"{winner.accuracy:6.1%} vs {natural.accuracy:6.1%}  tokens {saved:+.0%}"
+        )
