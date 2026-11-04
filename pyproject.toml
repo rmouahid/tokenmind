@@ -7,6 +7,9 @@ license = "MIT"
 readme = "README.md"
 packages = [{ include = "tokenmind" }]
 
+[tool.poetry.scripts]
+tokenmind = "tokenmind.cli:app"
+
 [tool.poetry.dependencies]
 python = "^3.12"
 httpx = "^0.28.1"
