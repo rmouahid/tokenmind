@@ -21,3 +21,12 @@ def test_hugging_face_tokenizers_count_without_special_tokens():
         pytest.skip(f"tokenizer download failed: {exc}")
     # Qwen splits numbers digit by digit, Llama 3 groups them by three.
     assert found == {"llama-3": 17, "qwen-2.5": 21}
+
+
+def test_models_map_to_their_family_tokenizer():
+    from tokenmind.tokenizers import tokenizer_for
+
+    assert tokenizer_for("llama3.2:3b") == "llama-3"
+    assert tokenizer_for("qwen/qwen-2.5-7b-instruct") == "qwen-2.5"
+    assert tokenizer_for("openai/gpt-4o-mini") == "gpt-4o"
+    assert tokenizer_for("phi3:mini") == "gpt-4o"

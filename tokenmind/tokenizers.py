@@ -37,3 +37,14 @@ def count(text: str, tokenizer: str = "gpt-4o") -> int:
 
 def counts(text: str, tokenizers=TOKENIZERS) -> dict[str, int]:
     return {name: count(text, name) for name in tokenizers}
+
+
+FAMILIES = {"llama": "llama-3", "qwen": "qwen-2.5", "mistral": "mistral",
+            "gemma": "gemma-2", "deepseek": "deepseek-v3", "gpt-4o": "gpt-4o",
+            "gpt-4": "gpt-4"}  # fmt: skip
+
+
+def tokenizer_for(model: str) -> str:
+    """The tokenizer of `model`'s family, GPT-4o's when unknown."""
+    name = model.lower()
+    return next((t for key, t in FAMILIES.items() if key in name), "gpt-4o")
