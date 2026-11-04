@@ -1,6 +1,7 @@
 """OpenAI-compatible chat client with an on-disk response cache.
 
-Works with OpenRouter, OpenAI, or a local Ollama / llama.cpp server. Every
+Works with a local Ollama server, OpenRouter, OpenAI, or any server speaking
+the same API (llama.cpp, vLLM, LM Studio) through `base_url`. Every
 response is stored under `cache_dir`, keyed by model and prompt, so a benchmark
 can be replayed and re-graded without paying twice.
 """
@@ -14,7 +15,11 @@ from pathlib import Path
 
 import httpx
 
-DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+PROVIDERS = {
+    "ollama": "http://localhost:11434/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
+    "openai": "https://api.openai.com/v1",
+}
 RETRYABLE = {429, 500, 502, 503, 504}
 
 
@@ -32,24 +37,30 @@ class Client:
     def __init__(
         self,
         base_url: str | None = None,
+        provider: str | None = None,
         api_key: str | None = None,
         cache_dir: Path = Path("cache"),
         transport: httpx.BaseTransport | None = None,
         sleep=time.sleep,
         retries: int = 5,
     ):
-        base_url = base_url or os.environ.get("TOKENMIND_BASE_URL", DEFAULT_BASE_URL)
+        provider = provider or os.environ.get("TOKENMIND_PROVIDER", "openrouter")
+        if provider not in PROVIDERS:
+            raise ValueError(f"unknown provider {provider!r}, choose from {PROVIDERS}")
+        base_url = base_url or os.environ.get("TOKENMIND_BASE_URL", PROVIDERS[provider])
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key or os.environ.get("TOKENMIND_API_KEY", "")
         self.cache_dir = cache_dir
-        self.http = httpx.Client(transport=transport, timeout=120)
+        self.http = httpx.Client(transport=transport, timeout=600)
         self.sleep = sleep
         self.retries = retries
 
     def _path(self, model: str, prompt: str, max_tokens: int) -> Path:
         key = json.dumps([model, prompt, max_tokens]).encode()
         digest = hashlib.sha256(key).hexdigest()
-        return self.cache_dir / model.replace("/", "__") / f"{digest}.json"
+        # Model tags such as `llama3.2:3b` are not valid file names on Windows.
+        folder = model.replace("/", "__").replace(":", "_")
+        return self.cache_dir / folder / f"{digest}.json"
 
     def chat(self, model: str, prompt: str, max_tokens: int = 64) -> Reply:
         path = self._path(model, prompt, max_tokens)

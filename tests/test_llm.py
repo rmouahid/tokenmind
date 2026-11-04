@@ -58,3 +58,14 @@ def test_client_errors_are_raised(tmp_path):
 def test_gives_up_after_the_retry_budget(tmp_path):
     with pytest.raises(LLMError, match="gave up"):
         make_client(tmp_path, [429] * 5).chat("m", "q")
+
+
+def test_providers_set_the_base_url(tmp_path):
+    assert Client(provider="ollama").base_url == "http://localhost:11434/v1"
+    with pytest.raises(ValueError, match="unknown provider"):
+        Client(provider="nope")
+
+
+def test_cache_folders_are_valid_windows_names(tmp_path):
+    make_client(tmp_path, [200]).chat("llama3.2:3b", "q")
+    assert [p.name for p in tmp_path.iterdir()] == ["llama3.2_3b"]
