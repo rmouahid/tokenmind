@@ -1,0 +1,11 @@
+model,task,representation,level,accuracy,natural_accuracy,tokenizer,token_change
+llama3.2:3b,aggregation,symbolic,4,0.125,0.075,llama-3,-0.376
+llama3.2:3b,comparison,condensed,3,0.575,0.500,llama-3,-0.218
+llama3.2:3b,filtering,hybrid,1,0.125,0.050,llama-3,-0.284
+llama3.2:3b,lookup,symbolic,3,0.975,0.975,llama-3,-0.300
+llama3.2:3b,multihop,condensed,3,0.775,0.725,llama-3,-0.218
+qwen2.5:3b,aggregation,hybrid,4,0.225,0.150,qwen-2.5,-0.344
+qwen2.5:3b,comparison,condensed,3,0.600,0.450,qwen-2.5,-0.244
+qwen2.5:3b,filtering,hybrid,1,0.175,0.075,qwen-2.5,-0.245
+qwen2.5:3b,lookup,symbolic,4,0.950,0.950,qwen-2.5,-0.379
+qwen2.5:3b,multihop,symbolic,3,0.625,0.550,qwen-2.5,-0.314
