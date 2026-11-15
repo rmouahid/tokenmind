@@ -18,8 +18,23 @@ The full protocol is in [docs/design.md](docs/design.md).
 
 ## Status
 
-Work in progress. Results and charts will be published in this repository
-once the benchmark has run.
+The first local run is published: **12,000 graded answers on two models
+(Llama 3.2 3B and Qwen 2.5 3B), five tasks and 40 items per cell**.
+Compressed symbolic contexts used about **36–39% fewer context tokens** than
+natural text on this sample. This measures context tokens, not total billed
+tokens or inference time.
+
+![Context token cost by representation and tokenizer on the preliminary run](docs/figures/tokens.png)
+
+The [preliminary report](docs/results.md) includes task/model comparisons,
+accuracy against compression, and the negative results: aggregation and
+filtering accuracy remain low even without compression. Token savings do
+not establish a useful answer-quality trade-off on those tasks.
+
+**The full benchmark is still pending**: the protocol requires at least
+four model families and 100 items per cell. These two-model results do not
+complete [#9](https://github.com/rmouahid/tokenmind/issues/9); a v1.0.0
+release awaits the complete run and its analysis.
 
 ## Run the benchmark on your computer
 
@@ -55,6 +70,12 @@ from Hugging Face.
 
    ```bash
    poetry run tokenmind benchmark
+   ```
+
+   To run the full protocol and generate its report and charts in one command:
+
+   ```bash
+   poetry run tokenmind benchmark && poetry run tokenmind report
    ```
 
    It prints progress and the time left. Every answer is cached in `cache/`,
