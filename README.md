@@ -65,6 +65,8 @@ from Hugging Face.
    poetry run tokenmind benchmark --quick
    ```
 
+   The trial writes to `runs/quick/` by default. Use `--out` to choose another directory.
+
 4. Run the full benchmark (100 worlds, 6 representations, 5 levels:
    15,000 answers per model):
 
@@ -82,7 +84,7 @@ from Hugging Face.
    so you can stop it with Ctrl+C and run the same command again to resume.
    Use `--worlds 40` for a shorter run, `--models` to choose other models.
 
-Results land in `results/`:
+Full benchmark results land in `results/` by default:
 
 | File | Content |
 | --- | --- |
