@@ -88,13 +88,17 @@ class Client:
     def _post(self, body: dict) -> dict:
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
         for attempt in range(self.retries):
-            response = self.http.post(
-                f"{self.base_url}/chat/completions", json=body, headers=headers
-            )
-            if response.status_code in RETRYABLE:
-                self.sleep(2**attempt)
-                continue
-            if response.is_error:
-                raise LLMError(f"{response.status_code}: {response.text[:200]}")
-            return response.json()
+            try:
+                response = self.http.post(
+                    f"{self.base_url}/chat/completions", json=body, headers=headers
+                )
+            except httpx.TransportError:
+                if attempt + 1 == self.retries:
+                    raise
+            else:
+                if response.status_code not in RETRYABLE:
+                    if response.is_error:
+                        raise LLMError(f"{response.status_code}: {response.text[:200]}")
+                    return response.json()
+            self.sleep(2**attempt)
         raise LLMError(f"gave up after {self.retries} attempts")

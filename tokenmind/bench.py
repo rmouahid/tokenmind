@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import mean
+from tempfile import NamedTemporaryFile
 
 from tokenmind.dataset import Item, World
 from tokenmind.grading import grade
@@ -128,10 +129,17 @@ def summarize(rows: Iterable[Row]) -> list[Cell]:
 def save_rows(rows: Iterable[Row], path: Path) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     written = 0
-    with path.open("w", encoding="utf-8") as out:
-        for row in rows:
-            out.write(json.dumps(asdict(row), ensure_ascii=False) + "\n")
-            written += 1
+    out = NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False)
+    temp_path = Path(out.name)
+    try:
+        with out:
+            for row in rows:
+                out.write(json.dumps(asdict(row), ensure_ascii=False) + "\n")
+                written += 1
+        temp_path.replace(path)
+    except BaseException:
+        temp_path.unlink(missing_ok=True)
+        raise
     return written
 
 

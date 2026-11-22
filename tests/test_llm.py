@@ -60,6 +60,30 @@ def test_gives_up_after_the_retry_budget(tmp_path):
         make_client(tmp_path, [429] * 5).chat("m", "q")
 
 
+def test_transport_errors_use_the_same_retry_budget_and_backoff(tmp_path):
+    sent = []
+    delays = []
+
+    def handler(request):
+        sent.append(request)
+        if len(sent) == 1:
+            return httpx.Response(503)
+        raise httpx.ConnectError("connection lost", request=request)
+
+    client = Client(
+        base_url="https://llm.test/v1",
+        cache_dir=tmp_path,
+        transport=httpx.MockTransport(handler),
+        sleep=delays.append,
+        retries=3,
+    )
+
+    with pytest.raises(httpx.ConnectError, match="connection lost"):
+        client.chat("m", "q")
+    assert len(sent) == 3
+    assert delays == [1, 2]
+
+
 def test_providers_set_the_base_url(tmp_path):
     assert Client(provider="ollama").base_url == "http://localhost:11434/v1"
     with pytest.raises(ValueError, match="unknown provider"):
