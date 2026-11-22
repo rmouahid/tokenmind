@@ -1,6 +1,7 @@
 import json
 
 import httpx
+import pytest
 from typer.testing import CliRunner
 
 from tokenmind import cli
@@ -27,7 +28,17 @@ def fake_client(answers_correctly: bool):
     return gold, factory
 
 
-def test_quick_benchmark_writes_every_result_file(tmp_path, monkeypatch):
+@pytest.mark.parametrize("out_option", [[], ["--out", "custom"]])
+def test_quick_benchmark_preserves_published_results(tmp_path, monkeypatch, out_option):
+    monkeypatch.chdir(tmp_path)
+    results = tmp_path / "results"
+    results.mkdir()
+    filenames = ("items.jsonl", "tokens.csv", "answers.jsonl", "cells.csv", "best.csv")
+    published = {name: f"Published {name}".encode() for name in filenames}
+    for name, content in published.items():
+        (results / name).write_bytes(content)
+    out = tmp_path / ("custom" if out_option else "runs/quick")
+
     gold, factory = fake_client(answers_correctly=True)
     real_generate = cli.dataset.generate
 
@@ -38,26 +49,33 @@ def test_quick_benchmark_writes_every_result_file(tmp_path, monkeypatch):
 
     monkeypatch.setattr(cli.dataset, "generate", generate)
     monkeypatch.setattr(
+        cli.bench,
+        "counts",
+        lambda text, tokenizers: dict.fromkeys(tokenizers, len(text)),
+    )
+    monkeypatch.setattr(
         cli, "Client", lambda provider: factory(provider, tmp_path / "cache")
     )
     result = CliRunner().invoke(
         cli.app,
         ["benchmark", "--quick", "--models", "llama3.2:3b,qwen2.5:3b",
-         "--out", str(tmp_path / "results")],
+         *out_option],
     )  # fmt: skip
     assert result.exit_code == 0, result.output
-    for name in ("items.jsonl", "tokens.csv", "answers.jsonl", "cells.csv", "best.csv"):
-        assert (tmp_path / "results" / name).exists()
-    answers = (tmp_path / "results" / "answers.jsonl").read_text().splitlines()
+    assert {path.name: path.read_bytes() for path in results.iterdir()} == published
+    assert {path.name for path in out.iterdir()} == set(filenames)
+    answers = (out / "answers.jsonl").read_text().splitlines()
     assert len(answers) == 25 * 6 * 2 * 2
-    best = (tmp_path / "results" / "best.csv").read_text()
+    best = (out / "best.csv").read_text()
     assert "llama-3" in best and "qwen-2.5" in best
     # Iterates model by model: every llama answer comes before any qwen answer.
     models = [json.loads(line)["model"] for line in answers]
     assert models == sorted(models, key=["llama3.2:3b", "qwen2.5:3b"].index)
 
 
-def test_benchmark_explains_an_unreachable_server(monkeypatch):
+def test_benchmark_explains_an_unreachable_server(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
     def refuse(request):
         raise httpx.ConnectError("refused")
 

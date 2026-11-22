@@ -2,6 +2,7 @@
 
 import time
 from pathlib import Path
+from typing import Annotated
 
 import httpx
 import typer
@@ -145,7 +146,10 @@ def benchmark(
     seed: int = 0,
     levels: str = "0,1,2,3,4",
     quick: bool = typer.Option(False, help="5 worlds, levels 0 and 4: a trial run"),
-    out: Path = Path("results"),
+    out: Annotated[
+        Path | None,
+        typer.Option(help="Output directory (results/, or runs/quick/ with --quick)"),
+    ] = None,
 ) -> None:
     """Everything in one go: dataset, token costs, answers, summary, winners.
 
@@ -154,6 +158,8 @@ def benchmark(
     """
     if quick:
         worlds, levels = 5, "0,4"
+    if out is None:
+        out = Path("runs/quick" if quick else "results")
     if provider not in PROVIDERS:
         raise typer.BadParameter(f"choose from {', '.join(PROVIDERS)}")
     names, client = _split(models), Client(provider=provider)
